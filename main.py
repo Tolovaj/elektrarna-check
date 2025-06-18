@@ -23,7 +23,7 @@ vceraj = date.today() - timedelta(days=1)
 datum = vceraj.isoformat()
 
 # Klic na Moj Elektro testni API
-url = f"https://api-test.informatika.si/mojelektro/v1/meter-readings?gsrn={GSRN}&datum={datum}"
+url = f"https://mojelektro.informatika.si/api/v1/meter-readings?gsrn={GSRN}&datum={datum}"
 headers = {
     "Authorization": f"Bearer {API_TOKEN}",
     "Accept": "application/json"
