@@ -24,7 +24,8 @@ headers = {
 params = {
     "usagePoint": GSRN,
     "startTime": datum,
-    "endTime": datum
+    "endTime": datum,
+    "option": "ReadingType=32.0.2.4.1.2.12.0.0.0.0.0.0.0.0.3.72.0"
 }
 
 # 📥 Klic API in obdelava
