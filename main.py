@@ -3,9 +3,9 @@ import requests
 from datetime import date, timedelta
 from twilio.rest import Client
 
-# Okoljske spremenljivke iz GitHub Secrets
+# Nastavitve iz okolja (GitHub Secrets)
 API_TOKEN = os.environ['MOJELEKTRO_TOKEN']
-MESTO_ID = os.environ['MOJELEKTRO_METRIC_ID']
+GSRN = os.environ['MOJELEKTRO_GSRN']
 tw_sid = os.environ['TWILIO_SID']
 tw_token = os.environ['TWILIO_TOKEN']
 tw_from = os.environ['TWILIO_FROM']
@@ -15,25 +15,34 @@ tw_to = os.environ['TWILIO_TO']
 vceraj = date.today() - timedelta(days=1)
 datum = vceraj.isoformat()
 
-# API klic
-url = f"https://mojelektro.si/api/merilno-mesto/{MESTO_ID}/dnevni-podatki"
-params = {'datum': datum}
-headers = {'Authorization': f'Bearer {API_TOKEN}'}
+# Klic na Moj Elektro testni API
+url = f"https://api-test.informatika.si/mojelektro/v1/meter-readings?gsrn={GSRN}&datum={datum}"
+headers = {
+    "Authorization": f"Bearer {API_TOKEN}",
+    "Accept": "application/json"
+}
 
-r = requests.get(url, params=params, headers=headers)
-r.raise_for_status()
+# Pošlji zahtevek
+r = requests.get(url, headers=headers)
+
 try:
     data = r.json()
 except Exception as e:
-    print("Napaka pri pretvorbi v JSON – morda napačen API_TOKEN, merilno mesto ali ni podatkov.")
-    print("HTTP status:", r.status_code)
-    print("Odzivna vsebina:", r.text)
-    raise e  # prekinemo skripto, da vidimo točno napako
+    print("⚠️ Napaka pri branju JSON odgovora:")
+    print("Status:", r.status_code)
+    print("Odziv:", r.text[:500])
+    raise e
 
-# Preverimo oddano energijo
-oddana_energija = data.get('oddana_energija_kwh', 0)
+# Privzeta vrednost
+oddana_energija = 0
 
-# Priprava sporočila glede na stanje
+# Poskušaj najti energijo v podatkih
+if "intervalBlocks" in data:
+    for block in data["intervalBlocks"]:
+        for reading in block.get("intervalReadings", []):
+            oddana_energija += reading.get("value", 0)
+
+# Pripravi sporočilo
 if oddana_energija > 0:
     msg = (
         "ELEKTRARNA DELUJE! "
