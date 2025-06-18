@@ -3,65 +3,56 @@ import requests
 from datetime import date, timedelta
 from twilio.rest import Client
 
-# 🔐 Secrets iz okolja
-API_TOKEN = os.environ['MOJELEKTRO_TOKEN']
-GSRN = os.environ['MOJELEKTRO_GSRN']
-TWILIO_SID = os.environ['TWILIO_SID']
-TWILIO_TOKEN = os.environ['TWILIO_TOKEN']
-TWILIO_FROM = os.environ['TWILIO_FROM']
-TWILIO_TO = os.environ['TWILIO_TO']
+# Okoljske spremenljivke iz GitHub/GitLab Secrets
+API_TOKEN = os.getenv("MOJELEKTRO_API_TOKEN")
+USAGE_POINT = os.getenv("MOJELEKTRO_USAGE_POINT")
+READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"
 
-# 📅 Včerajšnji datum
-vceraj = date.today() - timedelta(days=1)
-datum = vceraj.isoformat()
+TWILIO_SID = os.getenv("TWILIO_SID")
+TWILIO_TOKEN = os.getenv("TWILIO_TOKEN")
+TWILIO_FROM = os.getenv("TWILIO_FROM")
+TWILIO_TO = os.getenv("TWILIO_TO")
 
-# 🌐 API podatki
-url = "https://api.informatika.si/mojelektro/v1/meter-readings"
-headers = {
-    "X-API-TOKEN": API_TOKEN,
-    "Accept": "application/json"
-}
-params = {
-    "usagePoint": GSRN,
-    "startTime": datum,
-    "endTime": datum,
-    "option": "ReadingType=32.0.2.4.1.2.12.0.0.0.0.0.0.0.0.3.72.0"
-}
+def fetch_energy(datum: str) -> float:
+    url = "https://api.informatika.si/mojelektro/v1/meter-readings"
+    headers = { "X-API-TOKEN": API_TOKEN }
+    params = {
+        "usagePoint": USAGE_POINT,
+        "startTime": datum,
+        "endTime": datum,
+        "option": f"ReadingType={READING_TYPE}"
+    }
 
-# 📥 Klic API in obdelava
-try:
     response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()
+
     data = response.json()
-except Exception as e:
-    print("⚠️ Napaka pri pridobivanju ali razčlenjevanju podatkov!")
-    print("Status:", response.status_code if 'response' in locals() else "Ni odgovora")
-    print("Odziv:", response.text[:500] if 'response' in locals() else "Ni vsebine")
-    raise e
+    value = float(data["intervalBlocks"][0]["intervalReadings"][0]["value"])
+    return value
 
-# ⚙️ Seštej vse vrednosti v podatkih
-oddana_energija = 0.0
-
-for block in data.get("intervalBlocks", []):
-    for reading in block.get("intervalReadings", []):
-        try:
-            oddana_energija += float(reading.get("value", 0))
-        except ValueError:
-            continue  # preskoči, če ni številka
-
-# 📤 Pripravi in pošlji SMS
-if oddana_energija > 0:
-    body = (
-        f"ELEKTRARNA DELUJE! Dnevno poročilo o delovanju sončne elektrarne Gmajnica 255. "
-        f"Včeraj je bilo proizvedene {oddana_energija:.2f} kWh električne energije."
+def send_sms(message: str):
+    client = Client(TWILIO_SID, TWILIO_TOKEN)
+    client.messages.create(
+        body=message,
+        from_=TWILIO_FROM,
+        to=TWILIO_TO
     )
-else:
-    body = "ELEKTRARNA NE DELUJE! Včeraj elektrarna ni delovala."
 
-# Twilio SMS
-client = Client(TWILIO_SID, TWILIO_TOKEN)
-client.messages.create(
-    body=body,
-    from_=TWILIO_FROM,
-    to=TWILIO_TO
-)
+if __name__ == "__main__":
+    try:
+        today = date.today()
+        day1 = (today - timedelta(days=2)).isoformat()
+        day2 = (today - timedelta(days=1)).isoformat()
+
+        energy1 = fetch_energy(day1)
+        energy2 = fetch_energy(day2)
+        delta = round(energy2 - energy1, 3)
+
+        msg = f"⚡ Oddana energija za {day2}: {delta} kWh"
+
+        print(msg)
+        send_sms(msg)
+
+    except Exception as e:
+        print("⚠️ Napaka:")
+        print(e)
