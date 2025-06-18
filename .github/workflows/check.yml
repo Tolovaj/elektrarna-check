@@ -24,6 +24,7 @@ jobs:
         env:
           MOJELEKTRO_TOKEN: ${{ secrets.MOJELEKTRO_TOKEN }}
           MOJELEKTRO_METRIC_ID: ${{ secrets.MOJELEKTRO_METRIC_ID }}
+          MOJELEKTRO_GSRN: ${{ secrets.MOJELEKTRO_GSRN }}
           TWILIO_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_TOKEN: ${{ secrets.TWILIO_TOKEN }}
           TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
