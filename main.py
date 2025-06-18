@@ -22,8 +22,8 @@ tw_to = os.environ['TWILIO_TO']
 vceraj = date.today() - timedelta(days=1)
 datum = vceraj.isoformat()
 
-# Klic na Moj Elektro testni API
-url = f"https://mojelektro.informatika.si/api/v1/meter-readings?gsrn={GSRN}&datum={datum}"
+# Klic na Moj Elektro  API
+url = f"https://api.informatika/mojelektro/v1/meter-readings?gsrn={GSRN}&datum={datum}"
 headers = {
     "Authorization": f"Bearer {API_TOKEN}",
     "Accept": "application/json"
