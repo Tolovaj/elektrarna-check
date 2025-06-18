@@ -1,0 +1,30 @@
+name: Preveri delovanje elektrarne
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # vsak dan ob 08:00 CET/CEST (6:00 UTC)
+  workflow_dispatch:      # omogoči tudi ročni zagon
+
+jobs:
+  preveri:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Namesti Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Namesti odvisnosti
+        run: pip install requests twilio
+
+      - name: Zaženi skripto
+        run: python main.py
+        env:
+          MOJELEKTRO_TOKEN: ${{ secrets.MOJELEKTRO_TOKEN }}
+          MOJELEKTRO_METRIC_ID: ${{ secrets.MOJELEKTRO_METRIC_ID }}
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_TOKEN: ${{ secrets.TWILIO_TOKEN }}
+          TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+          TWILIO_TO: ${{ secrets.TWILIO_TO }}
