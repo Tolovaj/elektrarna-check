@@ -1,4 +1,11 @@
 import os
+
+print("DEBUG: Razpoložljive spremenljivke:")
+print(list(os.environ.keys()))
+
+if 'MOJELEKTRO_GSRN' not in os.environ:
+    raise RuntimeError("MOJELEKTRO_GSRN ni bil naložen! Secret manjka.")
+
 import requests
 from datetime import date, timedelta
 from twilio.rest import Client
