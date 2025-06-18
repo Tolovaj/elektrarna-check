@@ -6,7 +6,7 @@ import os
 # Konstante
 MERILNO_MESTO = "3-8005031"
 API_TOKEN = os.environ["MOJELEKTRO_TOKEN"]
-TWILIO_SID = os.environ["TWILIO_ACCOUNT_SID"]
+TWILIO_SID = os.environ["TWILIO_SID"]
 TWILIO_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
 TWILIO_FROM = os.environ["TWILIO_FROM"]
 TWILIO_TO = os.environ["TWILIO_TO"]
