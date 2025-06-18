@@ -22,7 +22,13 @@ headers = {'Authorization': f'Bearer {API_TOKEN}'}
 
 r = requests.get(url, params=params, headers=headers)
 r.raise_for_status()
-data = r.json()
+try:
+    data = r.json()
+except Exception as e:
+    print("Napaka pri pretvorbi v JSON – morda napačen API_TOKEN, merilno mesto ali ni podatkov.")
+    print("HTTP status:", r.status_code)
+    print("Odzivna vsebina:", r.text)
+    raise e  # prekinemo skripto, da vidimo točno napako
 
 # Preverimo oddano energijo
 oddana_energija = data.get('oddana_energija_kwh', 0)
