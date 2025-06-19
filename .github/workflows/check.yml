@@ -2,7 +2,7 @@ name: Preveri delovanje elektrarne
 
 on:
   schedule:
-    - cron: '0 18 * * *'  # vsak dan ob 08:00 CET/CEST (18:00 UTC)
+    - cron: '0 18 * * *'  # vsak dan ob 19:00 CET / 20:00 CEST (18:00 UTC)
   workflow_dispatch:      # omogoči tudi ročni zagon
 
 jobs:
