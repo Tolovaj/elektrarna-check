@@ -1,76 +1,56 @@
 import requests
-import time
-import smtplib
-from email.message import EmailMessage
-from datetime import datetime, timedelta
+from datetime import date, timedelta
+from twilio.rest import Client
 import os
 
-# --- KONFIGURACIJA ---
-usage_point = os.getenv("MOJELEKTRO_METRIC_ID") or "3-8005031"
-token = os.getenv("MOJELEKTRO_TOKEN")
-recipient = os.getenv("MAIL_TO")
-gmail_user = os.getenv("GMAIL_USER")
-gmail_pass = os.getenv("GMAIL_PASS")
+# Konstante
+MERILNO_MESTO = "3-8005031"
+API_TOKEN = os.environ["MOJELEKTRO_TOKEN"]
+TWILIO_SID = os.environ["TWILIO_ACCOUNT_SID"]
+TWILIO_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
+TWILIO_FROM = os.environ["TWILIO_FROM"]
+TWILIO_TO = os.environ["TWILIO_TO"]
+READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"  # Oddana delovna energija ET (24h)
 
-# --- DATUMI ---
-dan1 = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
-dan2 = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+# Datum včeraj in dan pred tem
+dan2 = date.today() - timedelta(days=1)
+dan1 = dan2 - timedelta(days=1)
 
-reading_type = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"  # Oddana delovna energija ET
-url_base = "https://api.informatika.si/mojelektro/v1/meter-readings"
-
-def pridobi_podatke(datum):
-    headers = {"Authorization": f"Bearer {token}"}
+def pridobi_energijo(datum):
+    url = "https://api.informatika.si/mojelektro/v1/meter-readings"
+    headers = {"X-API-TOKEN": API_TOKEN}
     params = {
-        "usagePoint": usage_point,
-        "startTime": datum,
-        "endTime": datum,
-        "option": f"ReadingType={reading_type}"
+        "usagePoint": MERILNO_MESTO,
+        "startTime": datum.isoformat(),
+        "endTime": datum.isoformat(),
+        "option": f"ReadingType={READING_TYPE}"
     }
+    print(f"➡️ Pošiljam zahtevo za {datum}...")
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    data = response.json()
+    vrednost = float(data["intervalBlocks"][0]["intervalReadings"][0]["value"])
+    return vrednost
 
-    for poskus in range(1, 11):
-        print(f"➡️ Pošiljam zahtevo ({poskus}/10) za datum {datum}...")
-        try:
-            r = requests.get(url_base, headers=headers, params=params, timeout=10)
-            r.raise_for_status()
-            data = r.json()
-            vrednost = float(data['intervalBlocks'][0]['intervalReadings'][0]['value'])
-            print(f"✅ {datum}: {vrednost} kWh")
-            return vrednost
-        except Exception as e:
-            print(f"⚠️ Poskus {poskus} ni uspel: {e}")
-            if poskus < 10:
-                time.sleep(15)
-            else:
-                raise Exception(f"Napaka po 10 poskusih za datum {datum}")
-
-def poslji_mail(zadeva, vsebina):
-    msg = EmailMessage()
-    msg.set_content(vsebina)
-    msg['Subject'] = zadeva
-    msg['From'] = gmail_user
-    msg['To'] = recipient
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(gmail_user, gmail_pass)
-            smtp.send_message(msg)
-            print("📧 Mail uspešno poslan.")
-    except Exception as e:
-        print(f"❌ Napaka pri pošiljanju maila: {e}")
-
-# --- GLAVNI DEL ---
 try:
-    energija1 = pridobi_podatke(dan1)
-    energija2 = pridobi_podatke(dan2)
+    energija1 = pridobi_energijo(dan1)
+    energija2 = pridobi_energijo(dan2)
     razlika = round(energija2 - energija1, 2)
 
-    subject = f"Oddana energija za {dan2}"
-    body = f"Med {dan1} in {dan2} si oddal {razlika} kWh v omrežje."
+    if razlika > 0:
+        body = f"ELEKTRARNA DELUJE! Včeraj ({dan2}) je bilo proizvedene {razlika} kWh električne energije."
+    else:
+        body = f"ELEKTRARNA NE DELUJE! Včeraj ({dan2}) elektrarna ni delovala."
 
-    poslji_mail(subject, body)
+    print(f"➡️ Pošiljam SMS: {body}")
+    client = Client(TWILIO_SID, TWILIO_TOKEN)
+    message = client.messages.create(
+        body=body,
+        from_=TWILIO_FROM,
+        to=TWILIO_TO
+    )
+    print("✅ SMS poslan.")
 
 except Exception as e:
-    error_subject = f"Napaka pri preverjanju elektrarne ({datetime.now().strftime('%Y-%m-%d')})"
-    error_body = f"Prišlo je do napake:\n\n{e}"
-    poslji_mail(error_subject, error_body)
+    print("⚠️ Napaka:")
+    print(e)
