@@ -1,76 +1,76 @@
 import requests
-import datetime
-import os
+import time
 import smtplib
 from email.message import EmailMessage
+from datetime import datetime, timedelta
+import os
 
-# 💾 Branje iz okolja
-TOKEN = os.getenv("MOJELEKTRO_TOKEN")
-USAGE_POINT = os.getenv("MOJELEKTRO_METRIC_ID")
-EMAIL_FROM = os.getenv("EMAIL_FROM")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_TO = os.getenv("EMAIL_TO")
+# --- KONFIGURACIJA ---
+usage_point = os.getenv("MOJELEKTRO_METRIC_ID") or "3-8005031"
+token = os.getenv("MOJELEKTRO_TOKEN")
+recipient = os.getenv("MAIL_TO")
+gmail_user = os.getenv("GMAIL_USER")
+gmail_pass = os.getenv("GMAIL_PASS")
 
-READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"
+# --- DATUMI ---
+dan1 = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
+dan2 = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-# 📆 Datumi
-dan1 = (datetime.datetime.now() - datetime.timedelta(days=2)).date()
-dan2 = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
+reading_type = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"  # Oddana delovna energija ET
+url_base = "https://api.informatika.si/mojelektro/v1/meter-readings"
 
-def pridobi_energijo(datum):
-    url = "https://api.informatika.si/mojelektro/v1/meter-readings"
-    headers = {
-        "X-API-TOKEN": TOKEN
-    }
+def pridobi_podatke(datum):
+    headers = {"Authorization": f"Bearer {token}"}
     params = {
-        "usagePoint": USAGE_POINT,
-        "startTime": str(datum),
-        "endTime": str(datum),
-        "option": f"ReadingType={READING_TYPE}"
+        "usagePoint": usage_point,
+        "startTime": datum,
+        "endTime": datum,
+        "option": f"ReadingType={reading_type}"
     }
 
-    print(f"➡️ Pošiljam zahtevo za datum {datum}...")
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    data = response.json()
+    for poskus in range(1, 11):
+        print(f"➡️ Pošiljam zahtevo ({poskus}/10) za datum {datum}...")
+        try:
+            r = requests.get(url_base, headers=headers, params=params, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+            vrednost = float(data['intervalBlocks'][0]['intervalReadings'][0]['value'])
+            print(f"✅ {datum}: {vrednost} kWh")
+            return vrednost
+        except Exception as e:
+            print(f"⚠️ Poskus {poskus} ni uspel: {e}")
+            if poskus < 10:
+                time.sleep(15)
+            else:
+                raise Exception(f"Napaka po 10 poskusih za datum {datum}")
 
-    interval_blocks = data.get("intervalBlocks", [])
-    if interval_blocks and "intervalReadings" in interval_blocks[0]:
-        vrednost = float(interval_blocks[0]["intervalReadings"][0]["value"])
-        return vrednost
-    else:
-        return None
-
-try:
-    energija_dan1 = pridobi_energijo(dan1)
-    energija_dan2 = pridobi_energijo(dan2)
-
-    if energija_dan1 is None or energija_dan2 is None:
-        sporocilo = f"⚠️ Ni podatkov za {dan1} ali {dan2}."
-    else:
-        razlika = energija_dan2 - energija_dan1
-        if razlika > 0:
-            sporocilo = (f"ELEKTRARNA DELUJE!\n\n"
-                         f"Dnevno poročilo o delovanju sončne elektrarne.\n"
-                         f"Datum: {dan2}\n"
-                         f"Proizvedeno: {razlika:.2f} kWh")
-        else:
-            sporocilo = (f"ELEKTRARNA NE DELUJE!\n\n"
-                         f"Datum: {dan2}\n"
-                         f"Proizvodnja: 0.00 kWh")
-
-    # 📧 Pošlji e-mail
+def poslji_mail(zadeva, vsebina):
     msg = EmailMessage()
-    msg["Subject"] = "Poročilo sončne elektrarne"
-    msg["From"] = EMAIL_FROM
-    msg["To"] = EMAIL_TO
-    msg.set_content(sporocilo)
+    msg.set_content(vsebina)
+    msg['Subject'] = zadeva
+    msg['From'] = gmail_user
+    msg['To'] = recipient
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(EMAIL_FROM, EMAIL_PASSWORD)
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(gmail_user, gmail_pass)
+            smtp.send_message(msg)
+            print("📧 Mail uspešno poslan.")
+    except Exception as e:
+        print(f"❌ Napaka pri pošiljanju maila: {e}")
 
-    print("✅ E-mail poslan!")
+# --- GLAVNI DEL ---
+try:
+    energija1 = pridobi_podatke(dan1)
+    energija2 = pridobi_podatke(dan2)
+    razlika = round(energija2 - energija1, 2)
+
+    subject = f"Oddana energija za {dan2}"
+    body = f"Med {dan1} in {dan2} si oddal {razlika} kWh v omrežje."
+
+    poslji_mail(subject, body)
+
 except Exception as e:
-    print(f"⚠️ Napaka pri pošiljanju ali pridobivanju podatkov: {e}")
+    error_subject = f"Napaka pri preverjanju elektrarne ({datetime.now().strftime('%Y-%m-%d')})"
+    error_body = f"Prišlo je do napake:\n\n{e}"
+    poslji_mail(error_subject, error_body)
