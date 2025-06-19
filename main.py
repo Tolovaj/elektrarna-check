@@ -2,9 +2,10 @@ import requests
 from datetime import date, timedelta
 import smtplib
 import os
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import time
+from email.utils import formataddr
 
 # Konstante
 MERILNO_MESTO = "3-8005031"
@@ -43,11 +44,10 @@ def pridobi_energijo(datum):
 
 def poslji_mail(zadeva, telo):
     msg = MIMEMultipart()
-    msg["From"] = GMAIL_USER
+    msg["From"] = formataddr(("Elektrarna Gmajnica", GMAIL_USER))
     msg["To"] = MAIL_TO
     msg["Subject"] = zadeva
-
-    msg.attach(MIMEText(telo, "plain"))
+    msg.attach(MIMEText(telo, "plain", "utf-8"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
@@ -57,6 +57,7 @@ def poslji_mail(zadeva, telo):
     except Exception as e:
         print(f"❌ Napaka pri pošiljanju maila: {e}")
 
+# Glavna logika
 try:
     energija1 = pridobi_energijo(dan1)
     energija2 = pridobi_energijo(dan2)
