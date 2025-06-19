@@ -6,8 +6,8 @@ import os
 # Konstante
 MERILNO_MESTO = "3-8005031"
 API_TOKEN = os.environ["MOJELEKTRO_TOKEN"]
-TWILIO_SID = os.environ["TWILIO_ACCOUNT_SID"]
-TWILIO_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
+TWILIO_SID = os.environ["TWILIO_SID"]
+TWILIO_TOKEN = os.environ["TWILIO_TOKEN"]
 TWILIO_FROM = os.environ["TWILIO_FROM"]
 TWILIO_TO = os.environ["TWILIO_TO"]
 READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"  # Oddana delovna energija ET (24h)
