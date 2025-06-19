@@ -15,8 +15,8 @@ GMAIL_PASS = os.environ["GMAIL_PASS"]
 MAIL_TO = os.environ["MAIL_TO"]
 READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"
 
-# Datum včeraj in dan pred tem
-dan2 = date.today() - timedelta(days=1)
+# Danes in včeraj (da vidimo razliko do danes)
+dan2 = date.today()
 dan1 = dan2 - timedelta(days=1)
 
 def pridobi_energijo(datum):
@@ -64,7 +64,7 @@ try:
     razlika = round(energija2 - energija1, 2)
 
     if razlika > 0:
-        telo = f"ELEKTRARNA DELUJE! Včeraj ({dan2}) je bilo proizvedene {razlika} kWh električne energije."
+        telo = f"ELEKTRARNA DELUJE! Včeraj ({dan2}) je bilo oddane v omrežje {razlika} kWh električne energije."
     else:
         telo = f"ELEKTRARNA NE DELUJE! Včeraj ({dan2}) elektrarna ni delovala."
 
