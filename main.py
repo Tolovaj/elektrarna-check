@@ -6,6 +6,7 @@ import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
+import calendar
 
 # Konstante
 MERILNO_MESTO = "3-8005031"
@@ -15,9 +16,13 @@ GMAIL_PASS = os.environ["GMAIL_PASS"]
 MAIL_TO = os.environ["MAIL_TO"]
 READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"
 
-# Danes in včeraj (da vidimo razliko do danes)
-dan2 = date.today()
-dan1 = dan2 - timedelta(days=1)
+# Datumi
+danes = date.today()
+vceraj = danes - timedelta(days=1)
+
+# Za mesec in leto
+zacetek_meseca = danes.replace(day=1)
+zacetek_leta = danes.replace(month=1, day=1)
 
 def pridobi_energijo(datum):
     url = "https://api.informatika.si/mojelektro/v1/meter-readings"
@@ -59,16 +64,26 @@ def poslji_mail(zadeva, telo):
 
 # Glavna logika
 try:
-    energija1 = pridobi_energijo(dan1)
-    energija2 = pridobi_energijo(dan2)
-    razlika = round(energija2 - energija1, 2)
+    energija_danes = pridobi_energijo(danes)
+    energija_vceraj = pridobi_energijo(vceraj)
+    energija_zacetek_meseca = pridobi_energijo(zacetek_meseca)
+    energija_zacetek_leta = pridobi_energijo(zacetek_leta)
 
-    if razlika > 0:
-        telo = f"\nELEKTRARNA DELUJE!\n\n Danes ({dan2}) je bilo oddane v omrežje {razlika} kWh električne energije."
+    dnevna_razlika = round(energija_danes - energija_vceraj, 2)
+    mesecna_razlika = round(energija_danes - energija_zacetek_meseca, 2)
+    letna_razlika = round(energija_danes - energija_zacetek_leta, 2)
+
+    if dnevna_razlika > 0:
+        telo = (
+            f"ELEKTRARNA DELUJE!\n"
+            f"Danes ({danes}) je bilo oddane v omrežje {dnevna_razlika} kWh električne energije.\n"
+            f"V mesecu {calendar.month_name[danes.month]} {danes.year} je bilo oddanih {mesecna_razlika} kWh.\n"
+            f"V letu {danes.year} je bilo skupaj oddanih {letna_razlika} kWh."
+        )
     else:
-        telo = f"\nELEKTRARNA NE DELUJE!\n\nVčeraj ({dan2}) elektrarna ni delovala."
+        telo = f"ELEKTRARNA NE DELUJE!\nDanes ({danes}) elektrarna ni delovala."
 
-    print(f"➡️ Pošiljam e-pošto: {telo}")
+    print(f"➡️ Pošiljam e-pošto:\n{telo}")
     poslji_mail("Status elektrarne", telo)
 
 except Exception as e:
