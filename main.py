@@ -53,12 +53,18 @@ def pridobi_energijo(datum, reading_type):
             time.sleep(15)
     raise Exception("❌ Neuspešno pridobivanje podatkov po 10 poskusih.")
 
-def poslji_mail(zadeva, telo):
-    msg = MIMEMultipart()
+def poslji_mail(zadeva, html_body):
+    msg = MIMEMultipart("alternative")
     msg["From"] = formataddr(("Elektrarna Gmajnica", GMAIL_USER))
     msg["To"] = MAIL_TO
     msg["Subject"] = zadeva
-    msg.attach(MIMEText(telo, "plain", "utf-8"))
+
+    # Iz HTML odstrani oznake za plain text fallback
+    plain_text = html_body.replace("<br>", "\n").replace("<b>", "").replace("</b>", "").replace("&nbsp;", " ")
+
+    # Priloge: plain + html
+    msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
@@ -67,6 +73,7 @@ def poslji_mail(zadeva, telo):
         print("✅ E-pošta uspešno poslana.")
     except Exception as e:
         print(f"❌ Napaka pri pošiljanju maila: {e}")
+
 
 # Glavna logika
 try:
