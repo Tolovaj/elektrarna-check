@@ -6,7 +6,12 @@ import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
-import calendar
+
+# Slovenska imena mesecev
+slovenski_meseci = [
+    "", "januar", "februar", "marec", "april", "maj", "junij",
+    "julij", "avgust", "september", "oktober", "november", "december"
+]
 
 # Konstante
 MERILNO_MESTO = "3-8005031"
@@ -19,8 +24,6 @@ READING_TYPE = "32.0.4.1.19.2.12.0.0.0.0.0.0.0.0.3.72.0"
 # Datumi
 danes = date.today()
 vceraj = danes - timedelta(days=1)
-
-# Za mesec in leto
 zacetek_meseca = danes.replace(day=1)
 zacetek_leta = danes.replace(month=1, day=1)
 
@@ -73,11 +76,13 @@ try:
     mesecna_razlika = round(energija_danes - energija_zacetek_meseca, 2)
     letna_razlika = round(energija_danes - energija_zacetek_leta, 2)
 
+    mesec_slo = slovenski_meseci[danes.month]
+
     if dnevna_razlika > 0:
         telo = (
             f"ELEKTRARNA DELUJE!\n"
             f"Danes ({danes}) je bilo oddane v omrežje {dnevna_razlika} kWh električne energije.\n"
-            f"V mesecu {calendar.month_name[danes.month]} {danes.year} je bilo oddanih {mesecna_razlika} kWh.\n"
+            f"V mesecu {mesec_slo} {danes.year} je bilo oddanih {mesecna_razlika} kWh.\n"
             f"V letu {danes.year} je bilo skupaj oddanih {letna_razlika} kWh."
         )
     else:
