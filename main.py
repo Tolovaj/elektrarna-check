@@ -95,8 +95,9 @@ try:
     # Sestavi poročilo
     telo = (
         f"ELEKTRARNA DELUJE!\n"
+        f"Datum: ({danes})\n"
         f"ODDANO V OMREŽJE:\n"
-        f"Danes: ({danes}): {oddana_dnevna} kWh\n"
+        f"Danes: {oddana_dnevna} kWh\n"
         f"{mesec_slo}: {oddana_mesecna} kWh\n"
         f"{danes.year}: {oddana_letna} kWh\n\n"
         f"PORABA IZ OMREŽJA:\n"
