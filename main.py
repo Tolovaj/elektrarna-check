@@ -91,6 +91,7 @@ try:
     prejeta_letna = round(prejeta_danes - prejeta_leto_zacetek, 2)
 
     mesec_slo = slovenski_meseci[danes.month]
+    datum_slo = f"{danes.day}.{danes.month}.{danes.year}"
 
     # Sestavi poročilo
     telo = (
