@@ -106,11 +106,11 @@ try:
         f"<b>Datum:</b> {datum_slo}<br><br>"
         f"<b>ODDANO V OMREŽJE:</b><br>"
         f"Danes: {oddana_dnevna} kWh<br>"
-        f"{mesec_slo}: {oddana_mesecna} kWh<br>"
-        f"{danes.year}: {oddana_letna} kWh<br><br>"
+        f"V mesecu {mesec_slo}: {oddana_mesecna} kWh<br>"
+        f"V letu {danes.year}: {oddana_letna} kWh<br><br>"
         f"<b>PORABA IZ OMREŽJA:</b><br>"
         f"Danes: {prejeta_dnevna} kWh<br>"
-        f"V mesecu {mesec_slo} {danes.year}: {prejeta_mesecna} kWh<br>"
+        f"V mesecu {mesec_slo}: {prejeta_mesecna} kWh<br>"
         f"V letu {danes.year}: {prejeta_letna} kWh"
     )
 
