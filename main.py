@@ -66,7 +66,7 @@ try:
     if razlika > 0:
         telo = f"\nELEKTRARNA DELUJE!\n\n Danes ({dan2}) je bilo oddane v omrežje {razlika} kWh električne energije."
     else:
-        telo = f"\nELEKTRARNA NE DELUJE!\n\n Včeraj ({dan2}) elektrarna ni delovala."
+        telo = f"\nELEKTRARNA NE DELUJE!\n\nVčeraj ({dan2}) elektrarna ni delovala."
 
     print(f"➡️ Pošiljam e-pošto: {telo}")
     poslji_mail("Status elektrarne", telo)
